@@ -10,6 +10,21 @@ export class OnlinesimApi {
         numbers: {
           full_number: string
           maxdate: string
+          country: number
+        }[]
+      }
+
+      return data
+    } catch (e) {}
+  }
+
+  async getFreeCountryList() {
+    try {
+      const response = await fetch('https://onlinesim.ru/api/getFreeCountryList?lang=en')
+      const data = await response.json() as {
+        countries: {
+          country: number
+          country_text: string
         }[]
       }
 
