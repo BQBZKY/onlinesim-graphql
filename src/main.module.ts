@@ -3,6 +3,7 @@ import { GraphQLModule } from '@nestjs/graphql'
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo'
 
 import { FreePhoneNumbersModule } from 'free-phone-numbers/module'
+import { FreePhoneNumberMessagesModule } from 'free-phone-number-messages/module'
 @Module({
   imports: [
     GraphQLModule.forRoot<ApolloDriverConfig>({
@@ -11,6 +12,7 @@ import { FreePhoneNumbersModule } from 'free-phone-numbers/module'
     }),
 
     FreePhoneNumbersModule,
+    FreePhoneNumberMessagesModule,
   ],
 })
 export class MainModule {}
