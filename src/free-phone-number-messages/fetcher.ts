@@ -1,4 +1,8 @@
 import { Injectable } from '@nestjs/common'
+
+import { range } from 'lodash'
+import { findIndex } from 'utils/find-index'
+
 import { OnlinesimApi } from 'onlinesim/api'
 
 import {
@@ -7,7 +11,9 @@ import {
 } from 'onlinesim/types'
 
 import {
-  GetFreePhoneNumberMessagesArgs,
+  type Sms as Message,
+  type GetFreePhoneNumberMessagesArgs as Args,
+  type GetFreePhoneNumberMessagesPayload as Payload,
 } from './schema'
 
 @Injectable()
@@ -17,51 +23,94 @@ export class FreePhoneNumberMessagesFetcher {
   ) {}
 
   async fetch(
-    { phoneNumber }: GetFreePhoneNumberMessagesArgs
+    { phoneNumber, cursor, limit = 50 }: Args
   ) {
-    const [getPhoneListResponse, getCountryListResponse] = await Promise.all([
-      this.onlinesimApi.getFreePhoneList(),
-      this.onlinesimApi.getFreeCountryList(),
-    ])
+    const messages = []
 
-    const matchedPhoneItem = getPhoneListResponse!.numbers.find(
-      ({ full_number }) => full_number === phoneNumber
-    )!
+    const foundPhoneItem = await this.onlinesimApi.getFreePhoneList()
+      .then(
+        data => data!.numbers.find(
+          item => item.full_number === phoneNumber
+        )!
+      )
 
-    // if (!matchedPhoneItem) {
+    // if (!foundPhoneItem) {
     //   throw new PhoneNumberNotFoundException()
     // }
     // TODO: PhoneNumberNotFoundException
 
-    const { country, number, maxdate } = matchedPhoneItem
     const params: GetFreeMessageListParams = {
-      country,
-      phone: number,
+      country: foundPhoneItem.country,
+      phone: foundPhoneItem.number,
     }
 
-    const data = await this.onlinesimApi.getFreeMessageList(params)
-    const messages = this.parseMessages(data!)
+    const firstPageData = await this.onlinesimApi.getFreeMessageList(params)
 
-    const matchedCountryItem = getCountryListResponse!.countries.find(
-      item => item.country === country
-    )!
-    const { country_text } = matchedCountryItem
+    const { total, perPage } = this.parsePageInfo(firstPageData!)
 
-    return {
+    let start = 0
+    let end = limit
+
+    if (cursor) {
+      start = total - cursor
+      end = start + limit
+
+      if (end > total) {
+        end = total
+      }
+    }
+
+    const pages = range(
+      Math.ceil((start + 1) / perPage),
+      Math.ceil((end + 1) / perPage),
+    )
+
+    if (pages.at(0) === 1) {
+      pages.shift()
+
+      const firstPageMessages = this.parsePageMessages(firstPageData)
+      messages.push(...firstPageMessages)
+    }
+
+    const pagesData = await Promise.all(
+      pages.map(
+        page => this.onlinesimApi.getFreeMessageList({ ...params, page })
+      )
+    )
+
+    const moreMessages = pagesData
+      .map((data) => this.parsePageMessages(data))
+      .flat()
+
+    messages.push(...moreMessages)
+
+    return <Payload> {
+      messages,
+
       phoneNumber,
-      activatedAt: maxdate,
-      country: country_text,
-
-      messages
+      activatedAt: foundPhoneItem.maxdate,
     }
   }
 
-  private parseMessages(data: GetFreeMessageListResponse) {
-    return data!.messages.data.map(({
+  private parsePageInfo(data: GetFreeMessageListResponse) {
+    return {
+      total: data.messages.total,
+      offset: data.messages.from - 1,
+      perPage: data.messages.per_page,
+    }
+  }
+
+  private parsePageMessages(data: GetFreeMessageListResponse) {
+    const { total, offset } = this.parsePageInfo(data)
+
+    let id = total - offset
+
+    return data.messages.data.map(({
       text,
       in_number:        from,
       created_at: receivedAt,
     }) => ({
+      id: id--,
       from,
       text: text.replace(/received from onlinesim.ru/i, '').trim(),
       receivedAt,

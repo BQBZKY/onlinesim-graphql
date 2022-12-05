@@ -1,7 +1,8 @@
-import { ObjectType, ArgsType, Field } from '@nestjs/graphql'
+import { ObjectType, ArgsType, Field, Int } from '@nestjs/graphql'
 
 @ObjectType()
 export class Sms {
+  @Field(() => Int) id!: number
   @Field() from!: string
   @Field() text!: string
   // @Field() code?: string
@@ -12,11 +13,11 @@ export class Sms {
 export class GetFreePhoneNumberMessagesArgs {
   @Field() phoneNumber!: string
 
-  // @Field(() => Int, { nullable: true })
-  // cursor?: number
+  @Field(() => Int, { nullable: true })
+  cursor?: number
 
-  // @Field(() => Int, { defaultValue: 50 })
-  // limit!: number
+  @Field(() => Int, { defaultValue: 50 })
+  limit!: number
 }
 
 @ObjectType()
@@ -24,7 +25,7 @@ export class GetFreePhoneNumberMessagesPayload {
   @Field() phoneNumber!: string
   @Field() activatedAt!: string
 
-  @Field() country!: string
+  // @Field() country!: string
 
   // TODO countryCode
   // @Field() countryCode!: string

@@ -16,6 +16,13 @@ export type GetFreeCountryListResponse = {
 
 export type GetFreeMessageListResponse = {
   messages: {
+    from: number
+    // to: number
+    total: number
+
+    per_page: number
+    // current_page: number
+    // last_page: number
     data: {
       text: string
       in_number: string
