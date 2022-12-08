@@ -1,15 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import fetch from 'cross-fetch'
 
-import {
-  GetFreePhoneListResponse,
-  GetFreeCountryListResponse,
-  GetFreeMessageListResponse,
-  GetFreeMessageListParams,
-} from './types'
-
 @Injectable()
-export class OnlinesimApi {
+export class OriginApi {
   async getFreePhoneList() {
     const response = await fetch('https://onlinesim.ru/api/getFreePhoneList?lang=en')
     const data = await response.json() as GetFreePhoneListResponse
@@ -39,4 +32,43 @@ export class OnlinesimApi {
 
     return data
   }
+}
+
+export type GetFreePhoneListResponse = {
+  numbers: {
+    full_number: string
+    number: string
+    maxdate: string
+    country: number
+  }[]
+}
+
+export type GetFreeCountryListResponse = {
+  countries: {
+    country: number
+    country_text: string
+  }[]
+}
+
+export type GetFreeMessageListResponse = {
+  messages: {
+    from: number
+    // to: number
+    total: number
+
+    per_page: number
+    // current_page: number
+    // last_page: number
+    data: {
+      text: string
+      in_number: string
+      created_at: string
+    }[]
+  }
+}
+
+export type GetFreeMessageListParams = {
+  country: number
+  phone: string
+  page?: number
 }

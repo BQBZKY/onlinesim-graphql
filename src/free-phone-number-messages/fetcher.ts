@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common'
 
 import { range } from 'lodash'
-import { findIndex } from 'utils/find-index'
-
-import { OnlinesimApi } from 'onlinesim/api'
 
 import {
-  GetFreeMessageListResponse,
-  GetFreeMessageListParams,
-} from 'onlinesim/types'
+  OriginApi,
+  type GetFreeMessageListResponse,
+  type GetFreeMessageListParams,
+} from '_/origin-api'
+
+import { CountriesNormalizer } from '_/countries-normalizer'
 
 import {
   type Sms as Message,
@@ -19,7 +19,8 @@ import {
 @Injectable()
 export class FreePhoneNumberMessagesFetcher {
   constructor(
-    private readonly onlinesimApi: OnlinesimApi
+    private readonly originApi: OriginApi,
+    private readonly countriesNormalizer: CountriesNormalizer,
   ) {}
 
   async fetch(
@@ -27,7 +28,7 @@ export class FreePhoneNumberMessagesFetcher {
   ) {
     const messages = []
 
-    const foundPhoneItem = await this.onlinesimApi.getFreePhoneList()
+    const foundPhoneItem = await this.originApi.getFreePhoneList()
       .then(
         data => data!.numbers.find(
           item => item.full_number === phoneNumber
@@ -44,7 +45,7 @@ export class FreePhoneNumberMessagesFetcher {
       phone: foundPhoneItem.number,
     }
 
-    const firstPageData = await this.onlinesimApi.getFreeMessageList(params)
+    const firstPageData = await this.originApi.getFreeMessageList(params)
 
     const { total, perPage } = this.parsePageInfo(firstPageData!)
 
@@ -74,7 +75,7 @@ export class FreePhoneNumberMessagesFetcher {
 
     const pagesData = await Promise.all(
       pages.map(
-        page => this.onlinesimApi.getFreeMessageList({ ...params, page })
+        page => this.originApi.getFreeMessageList({ ...params, page })
       )
     )
 
@@ -84,11 +85,17 @@ export class FreePhoneNumberMessagesFetcher {
 
     messages.push(...moreMessages)
 
+    const { country, countryCode } = this.countriesNormalizer
+      .getCountry(foundPhoneItem.country)
+
     return <Payload> {
       messages,
 
       phoneNumber,
       activatedAt: foundPhoneItem.maxdate,
+
+      country,
+      countryCode,
     }
   }
 

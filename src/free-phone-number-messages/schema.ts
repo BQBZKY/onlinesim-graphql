@@ -25,10 +25,8 @@ export class GetFreePhoneNumberMessagesPayload {
   @Field() phoneNumber!: string
   @Field() activatedAt!: string
 
-  // @Field() country!: string
-
-  // TODO countryCode
-  // @Field() countryCode!: string
+  @Field() country!: string
+  @Field() countryCode!: string
 
   @Field(() => [Sms])
   messages!:    Sms[]

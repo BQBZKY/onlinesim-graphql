@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common'
-import { OnlinesimApi } from 'onlinesim/api'
+
+import { OriginApi } from '_/origin-api'
+import { CountriesNormalizer } from '_/countries-normalizer'
 
 import { FreePhoneNumberMessagesGraphQL } from './graphql'
 import { FreePhoneNumberMessagesFetcher } from './fetcher'
 
 @Module({
   providers: [
-    OnlinesimApi,
+    OriginApi,
+    CountriesNormalizer,
     FreePhoneNumberMessagesGraphQL,
     FreePhoneNumberMessagesFetcher,
   ]
